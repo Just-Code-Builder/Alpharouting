@@ -7,6 +7,7 @@
 [![Base](https://img.shields.io/badge/Base-Mainnet-0052FF?style=for-the-badge&logo=coinbase&logoColor=white)](https://base.org)
 [![Monad](https://img.shields.io/badge/Monad-Mainnet-836EF9?style=for-the-badge&logo=ethereum&logoColor=white)](https://monad.xyz)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.26-363636?style=for-the-badge&logo=solidity&logoColor=white)](https://soliditylang.org)
+[![Rust](https://img.shields.io/badge/Rust-Snippets-000000?style=for-the-badge&logo=rust&logoColor=white)](crates/)
 [![Foundry](https://img.shields.io/badge/Foundry-Framework-FF6B35?style=for-the-badge&logo=rust&logoColor=white)](https://getfoundry.sh)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge&logoColor=white)](LICENSE)
 
@@ -190,6 +191,30 @@ function receiveFlashLoan(address[] calldata tokens, uint256[] calldata amounts,
 
 <div align="center">
 
+## 🦀 Rust Snippets
+
+</div>
+
+Selected modules from the off-chain execution engine are shared here for public inspection. These cover infrastructure concerns — no strategy logic is included.
+
+<div align="center">
+
+| File | What it shows |
+|:---|:---|
+| [crates/api/src/lib.rs](crates/api/src/lib.rs) | Axum HTTP server — `/health`, `/stats`, `/routes`, `/trades`, `/metrics` endpoints + URL sanitisation (strips embedded API keys from RPC URLs before serving) |
+| [crates/chain/src/nonce.rs](crates/chain/src/nonce.rs) | Lock-free nonce manager — `AtomicU64` counter + `BTreeSet` release pool that prevents wallet-wedge when broadcasts abort mid-flight. 10 unit tests |
+| [crates/workers/src/priority_queue.rs](crates/workers/src/priority_queue.rs) | Bounded priority queue — `BinaryHeap` with FIFO tie-breaking via monotonic sequence counter. Hard capacity with `try_push` backpressure |
+| [crates/observability/src/lib.rs](crates/observability/src/lib.rs) | Execution event model — ring-buffer backed replay store tracking every opportunity from detection → simulation → broadcast → receipt |
+
+</div>
+
+> The full execution engine (scanners, executor, route discovery, prediction, mempool, scoring — 16 crates total) is private.
+> DM [@web4coder](https://x.com/web4coder) for access.
+
+---
+
+<div align="center">
+
 ## 🛠️ Tech Stack
 
 </div>
@@ -201,7 +226,7 @@ function receiveFlashLoan(address[] calldata tokens, uint256[] calldata amounts,
 ![Foundry](https://img.shields.io/badge/Foundry-Testing-FF6B35?style=for-the-badge&logo=rust&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-Persistence-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-Alerts_UI-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-Infra-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Self--Hosted-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 </div>
 
