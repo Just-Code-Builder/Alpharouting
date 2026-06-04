@@ -1,12 +1,9 @@
-// Axum HTTP server. Endpoints:
+// Axum HTTP server.
 //   GET /health   → liveness
-//   GET /stats    → aggregated trade counts + lifetime + 24h profit
-//   GET /routes   → snapshot of dynamic route registry
-//   GET /trades   → most recent 50 trades
-//   GET /metrics  → JSON observability summary + per-RPC-URL health.
-//                   This is the operator's one-stop "is the bot doing work?"
-//                   endpoint — scraped by uptime monitors, eyeballed in a
-//                   browser, also drives the Telegram /digest screen.
+//   GET /stats    → trade counts + lifetime + 24h profit
+//   GET /routes   → dynamic route registry snapshot
+//   GET /trades   → last 50 trades
+//   GET /metrics  → observability summary + per-RPC health
 
 use std::sync::Arc;
 
@@ -28,12 +25,9 @@ use storage::Storage;
 pub struct AppState {
     pub storage: Arc<Storage>,
     pub routes: Arc<DynamicRouteRegistry>,
-    /// Optional — present once the Executor has been constructed. /metrics
-    /// returns an empty observability block when None (e.g. during very
-    /// early boot before the executor task starts).
+    // None until the executor task starts; /metrics returns a partial block
+    // during early boot rather than refusing the request.
     pub observ: Option<Arc<ReplayBuffer>>,
-    /// Optional — surfaces per-RPC-URL health to /metrics. Same lifecycle
-    /// caveat as `observ`.
     pub rpc_pool: Option<HttpPool>,
 }
 
@@ -95,9 +89,6 @@ async fn trades(State(s): State<AppState>) -> impl IntoResponse {
     }
 }
 
-/// Combined operator dashboard: observability counters + per-RPC health.
-/// Returned as a single JSON object so a `curl /metrics | jq` lands on the
-/// 90% answer to "is the bot doing work?".
 async fn metrics(State(s): State<AppState>) -> impl IntoResponse {
     let observ_block = match s.observ.as_ref() {
         Some(buf) => {
@@ -123,20 +114,13 @@ async fn metrics(State(s): State<AppState>) -> impl IntoResponse {
         Some(pool) => {
             let endpoints: Vec<_> = pool.status().into_iter().map(|s| json!({
                 "index": s.index,
-                // Sanitize URL: keep scheme+host but DROP path/query.
-                // Alchemy/drpc/Infura/QuickNode embed API keys in the path
-                // (e.g. https://eth-mainnet.alchemyapi.io/v2/<KEY>) or
-                // query (?apikey=<KEY>). Serializing the raw URL leaks
-                // credentials to anyone who can curl :3001/metrics.
+                // Strip path/query — Alchemy, drpc, Infura embed API keys there.
                 "host": sanitize_url(&s.url),
                 "healthy": s.healthy,
                 "failures": s.failures,
                 "quota_blocked": s.quota_blocked,
             })).collect();
-            json!({
-                "endpoint_count": endpoints.len(),
-                "endpoints": endpoints,
-            })
+            json!({ "endpoint_count": endpoints.len(), "endpoints": endpoints })
         }
         None => json!({"status": "unavailable"}),
     };
@@ -148,10 +132,7 @@ async fn metrics(State(s): State<AppState>) -> impl IntoResponse {
     })))
 }
 
-/// Strip path + query from a URL, leaving only `scheme://host[:port]`.
-/// Used by /metrics to expose RPC endpoint health without leaking the
-/// API key embedded in the path (most paid RPC providers — Alchemy,
-/// drpc, Infura, QuickNode — put the key in the URL path or query).
+/// Strip path + query from a URL to avoid leaking embedded API keys.
 fn sanitize_url(url: &url::Url) -> String {
     let scheme = url.scheme();
     let host = url.host_str().unwrap_or("?");

@@ -1,11 +1,8 @@
 //! Bounded priority queue.
 //!
-//! `BinaryHeap` behind a `parking_lot::Mutex`. Entries carry (priority, seq, item) where
-//! `seq` is a monotonic submission counter. The heap order is by priority DESC then seq ASC,
-//! so the highest-priority item pops first and ties break FIFO.
-//!
-//! `try_push` enforces a hard capacity. When full it returns `Err` so the caller can decide
-//! whether to drop the task, log, or escalate.
+//! `BinaryHeap` behind a `parking_lot::Mutex`. Ordering: priority DESC,
+//! insertion order ASC within the same priority (FIFO). `try_push` returns
+//! `Err` at capacity so callers shed load explicitly.
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -14,8 +11,6 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use anyhow::{anyhow, Result};
 use parking_lot::Mutex;
 
-/// Heap entry. We invert the natural ordering so `BinaryHeap` (a max-heap) yields
-/// highest priority first, then earliest seq first.
 struct Entry<T> {
     priority: u8,
     seq: u64,
@@ -34,9 +29,10 @@ impl<T> PartialOrd for Entry<T> {
         Some(self.cmp(other))
     }
 }
+
 impl<T> Ord for Entry<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        // Higher priority => greater. Ties: lower seq => greater (FIFO).
+        // Higher priority wins. Ties: lower seq = earlier submission = greater.
         match self.priority.cmp(&other.priority) {
             Ordering::Equal => other.seq.cmp(&self.seq),
             ord => ord,
@@ -59,7 +55,7 @@ impl<T> PriorityQueue<T> {
         }
     }
 
-    /// Push with priority. Returns `Err` if queue is at capacity.
+    /// Returns `Err` when at capacity.
     pub fn try_push(&self, item: T, priority: u8) -> Result<()> {
         let mut guard = self.inner.lock();
         if guard.len() >= self.capacity {
@@ -70,10 +66,8 @@ impl<T> PriorityQueue<T> {
         Ok(())
     }
 
-    /// Pop highest priority (FIFO within same priority).
     pub fn pop(&self) -> Option<(u8, T)> {
-        let mut guard = self.inner.lock();
-        guard.pop().map(|e| (e.priority, e.item))
+        self.inner.lock().pop().map(|e| (e.priority, e.item))
     }
 
     pub fn len(&self) -> usize {
