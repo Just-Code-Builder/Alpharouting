@@ -53,7 +53,7 @@ The full execution engine — Rust, 16 crates, ~8 000 lines — is **private**.
 | Chain | Status | Flashloan Source | Notes |
 |:---:|:---:|:---:|:---|
 | <img src="https://img.shields.io/badge/Base-0052FF?style=flat-square&logo=coinbase&logoColor=white"/> | 🟢 **Live** | Aave V3 + Balancer V2 + Uni V3 | Full strategy suite — all 7 strategies active |
-| <img src="https://img.shields.io/badge/Monad-836EF9?style=flat-square&logo=ethereum&logoColor=white"/> | 🟢 **Live** | Balancer V2 + Uni V3 flash-swap | Aave not yet on Monad — Balancer + FlashSwap arb active |
+| <img src="https://img.shields.io/badge/Monad-836EF9?style=flat-square&logo=ethereum&logoColor=white"/> | 🟢 **Live** | Uni V3 flash-swap only | Aave V3 and Balancer V2 not deployed on Monad — FlashSwap arb only |
 
 </div>
 
@@ -251,7 +251,7 @@ Selected modules from the off-chain execution engine are shared here for public 
 | Phase | Status | Chain | What |
 |:---:|:---:|:---:|:---|
 | **1** | 🟢 **Live** | Base | Aave V3 liquidations + triangular arb + flashswap + Balancer |
-| **2** | 🟢 **Live** | Monad | Balancer + FlashSwap arb (Aave not yet on Monad) |
+| **2** | 🟢 **Live** | Monad | FlashSwap arb via Uni V3 pool.flash() — Aave V3 and Balancer V2 not on Monad |
 | **3** | 🟡 Planned | Ethereum | Same contract re-deployed; Aave V3 ETH addresses |
 | **4** | 🟡 Planned | BNB Chain | Venus protocol + PancakeSwap V3 |
 | **5** | 🔵 Research | Solana | Rust SDK rewrite — Solend + Raydium/Orca/Meteora |
