@@ -6,6 +6,7 @@ members = [
     "crates/observability",
     "crates/workers",
     "crates/liquidator",
+    "crates/radar",
 ]
 
 # crates/api is excluded: it references sibling crates (chain::HttpPool,
