@@ -1,0 +1,15 @@
+# Foundry
+out/
+cache/
+broadcast/*/31337/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Runtime artifacts (liquidator bot)
+borrowers.json
+
+# Secrets — never commit these
+.env
+*.pem

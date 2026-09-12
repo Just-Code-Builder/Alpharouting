@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/config",
+    "crates/chain",
+    "crates/observability",
+    "crates/workers",
+    "crates/liquidator",
+]
+
+# crates/api is excluded: it references sibling crates (chain::HttpPool,
+# routes::DynamicRouteRegistry, storage::Storage) that aren't part of this
+# public repo, so it can't compile standalone. See README.md.
+
+[workspace.package]
+edition = "2021"
+
+# serde >=1.0.221 removed `impl Deserialize for Content` from its private
+# internals. alloy-consensus 0.12.6 (the latest published alloy as of
+# writing) still calls that directly and fails to compile against it. Every
+# crate below pins serde to =1.0.220, the newest version that still has it,
+# until alloy ships a fix upstream — see crates/observability/Cargo.toml and
+# crates/liquidator/Cargo.toml.
