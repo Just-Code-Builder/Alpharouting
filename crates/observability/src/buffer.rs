@@ -285,7 +285,8 @@ mod tests {
         let b = ReplayBuffer::new(10);
         b.record(mk(EventOutcome::Success, Some("0xabc"), 1.5, 100));
         b.record(mk(EventOutcome::SimFailed, None, 0.0, 50));
-        let lines: Vec<&str> = b.export_jsonl().lines().collect();
+        let jsonl = b.export_jsonl();
+        let lines: Vec<&str> = jsonl.lines().collect();
         assert_eq!(lines.len(), 2);
         let _: ExecutionEvent = serde_json::from_str(lines[0]).unwrap();
     }
