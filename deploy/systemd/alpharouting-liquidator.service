@@ -1,0 +1,63 @@
+[Unit]
+Description=AlphaRouting Aave V3 liquidation bot
+Documentation=https://github.com/Just-Code-Builder/Alpharouting
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=alpharouting
+Group=alpharouting
+ExecStart=/usr/local/bin/liquidator
+EnvironmentFile=/etc/alpharouting/liquidator.env
+Restart=always
+RestartSec=15
+
+StateDirectory=alpharouting
+WorkingDirectory=/var/lib/alpharouting
+
+# This service signs transactions, so the key never lands in an env var or
+# in the unit file. systemd reads the credential as root and exposes it at
+# $CREDENTIALS_DIRECTORY/signing-key, readable only by this process — the
+# alpharouting user cannot read /etc/alpharouting/signing-key itself.
+LoadCredential=signing-key:/etc/alpharouting/signing-key
+# Set here rather than in liquidator.env: systemd expands specifiers like %d
+# in Environment= directives, but NOT inside EnvironmentFile contents, where
+# it would be passed through as the literal string "%d/signing-key".
+Environment=PRIVATE_KEY_FILE=%d/signing-key
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+
+# Higher ceiling than the radar: the borrower watchlist and its health-factor
+# polling grow with the number of tracked positions.
+MemoryMax=2G
+CPUQuota=80%
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=liquidator
+
+[Install]
+WantedBy=multi-user.target

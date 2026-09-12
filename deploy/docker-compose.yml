@@ -1,0 +1,72 @@
+# Docker alternative to the systemd units. See the note in ../Dockerfile:
+# the systemd path is the verified one.
+#
+#   cd deploy && docker compose up -d radar
+#
+# Run from the repo root as build context.
+
+services:
+  radar:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: alpharouting:latest
+    command: ["radar"]
+    restart: unless-stopped
+    env_file:
+      - ./radar.env
+    volumes:
+      - radar-state:/var/lib/alpharouting
+    # Sized from measured usage: the radar idles at ~5 MB RSS; headroom is
+    # for buffering a block window of Transfer logs.
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  liquidator:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: alpharouting:latest
+    command: ["liquidator"]
+    restart: unless-stopped
+    env_file:
+      - ./liquidator.env
+    # The signing key is mounted as a file, never baked into the image or
+    # passed as an environment variable. Create it with:
+    #   printf '%s' '0xKEY' | docker secret create alpharouting_signing_key -
+    # or, without swarm, mount a root-owned 0400 file read-only as below.
+    environment:
+      PRIVATE_KEY_FILE: /run/secrets/signing-key
+    volumes:
+      - liquidator-state:/var/lib/alpharouting
+      - ./signing-key:/run/secrets/signing-key:ro
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  radar-state:
+  liquidator-state:

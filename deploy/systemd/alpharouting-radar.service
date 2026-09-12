@@ -1,0 +1,58 @@
+[Unit]
+Description=AlphaRouting token launch radar
+Documentation=https://github.com/Just-Code-Builder/Alpharouting
+After=network-online.target
+Wants=network-online.target
+# Back off instead of hot-looping if it crashes on startup (bad RPC URL etc).
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=alpharouting
+Group=alpharouting
+ExecStart=/usr/local/bin/radar
+EnvironmentFile=/etc/alpharouting/radar.env
+Restart=always
+RestartSec=10
+
+# Creates and owns /var/lib/alpharouting; survives restarts, so the
+# seen-pool cache isn't lost and every historical launch re-alerted.
+StateDirectory=alpharouting
+WorkingDirectory=/var/lib/alpharouting
+
+# The radar is read-only and holds no keys, so it gets the tighter profile.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+
+# Measured idle RSS is ~5 MB; the headroom is for holder reconstruction,
+# which buffers a block window of Transfer logs. A leak gets killed rather
+# than taking the droplet's other service down with it.
+MemoryMax=1G
+CPUQuota=80%
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=radar
+
+[Install]
+WantedBy=multi-user.target
